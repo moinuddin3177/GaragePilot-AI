@@ -70,6 +70,33 @@ class Garage(BaseModel):
     registered: bool = False
 
 
+class Quote(BaseModel):
+    lead_id: str
+    place_id: str
+    garage_name: str
+    price: float
+    earliest_slot: str = ""
+    note: str = ""
+    created_at: str = ""
+
+
+class LeadBrief(BaseModel):
+    """What a garage sees about a lead. Customer contact is None until the customer picks this garage."""
+
+    lead_id: str
+    created_at: str
+    vehicle: Vehicle
+    symptoms: str
+    diagnosis: Diagnosis
+    distance_km: float
+    est_cost: Range
+    status: Literal["sent", "viewed", "quoted", "declined"]
+    quote: Quote | None = None
+    chosen: bool = False
+    customer_name: str | None = None
+    customer_contact: str | None = None
+
+
 class Match(BaseModel):
     garage: Garage
     distance_km: float
