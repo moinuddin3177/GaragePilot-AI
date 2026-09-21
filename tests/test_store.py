@@ -168,6 +168,23 @@ def test_choose_requires_quote_and_locks_further_quotes(store, diagnosis):
         store.submit_quote(lead_id, "g2", 50)
 
 
+def test_garage_id_for_token(store):
+    token = register(store, "g1")
+    assert store.garage_id_for_token(token) == "g1"
+    assert store.garage_id_for_token(f"  {token}\n") == "g1"
+    assert store.garage_id_for_token("nope") is None and store.garage_id_for_token("") is None
+
+
+def test_lead_exists_and_progress(store, diagnosis):
+    register(store, "g1"), register(store, "g2")
+    lead_id = make_lead(store, diagnosis, place_ids=("g1", "g2"))
+    assert store.lead_exists(lead_id) and not store.lead_exists("nope")
+    store.submit_quote(lead_id, "g1", 100)
+    progress = {p["name"]: p["status"] for p in store.lead_progress(lead_id)}
+    assert progress == {"Garage g1": "quoted", "Garage g2": "sent"}
+    assert "sam@example.com" not in str(store.lead_progress(lead_id))
+
+
 def test_data_persists_across_store_instances(tmp_path, diagnosis):
     path = tmp_path / "p.db"
     token = register(Store(path))

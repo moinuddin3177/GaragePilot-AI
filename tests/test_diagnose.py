@@ -130,6 +130,23 @@ def test_refusal_and_incomplete_output():
         dg.diagnose(VEHICLE, "x", client=FakeClient(parsed=None, stop_reason="max_tokens"))
 
 
+def test_no_credentials_at_request_time_gives_clear_message():
+    # Exact text the SDK raises on the request when the client was built without any credentials.
+    err = TypeError('"Could not resolve authentication method. Expected one of api_key, auth_token, or credentials to be set."')
+    with pytest.raises(dg.DiagnosisError, match="No Anthropic API key"):
+        dg.diagnose(VEHICLE, "noise", client=FakeClient(raises=err))
+    with pytest.raises(TypeError, match="unrelated"):  # other TypeErrors are real bugs, not hidden
+        dg.diagnose(VEHICLE, "noise", client=FakeClient(raises=TypeError("unrelated")))
+
+
+def test_missing_api_key_gives_clear_message(monkeypatch):
+    for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_PROFILE"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("ANTHROPIC_CONFIG_DIR", "nonexistent-dir-for-test")
+    with pytest.raises(dg.DiagnosisError, match="No Anthropic API key"):
+        dg.diagnose(VEHICLE, "noise")  # real client construction, no network call
+
+
 @pytest.mark.parametrize(
     "exc, message",
     [

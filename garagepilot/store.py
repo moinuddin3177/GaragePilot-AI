@@ -151,6 +151,15 @@ class Store:
             row = conn.execute("SELECT token_hash FROM garages WHERE place_id = ?", (place_id,)).fetchone()
         return bool(row) and hmac.compare_digest(row["token_hash"], _hash_token(token.strip()))
 
+    def garage_id_for_token(self, token: str) -> str | None:
+        """place_id for a valid access token, else None. Tokens are 128-bit random, so unique."""
+        token = token.strip()
+        if not token:
+            return None
+        with self._conn() as conn:
+            row = conn.execute("SELECT place_id FROM garages WHERE token_hash = ?", (_hash_token(token),)).fetchone()
+        return row["place_id"] if row else None
+
     def update_garage(
         self,
         place_id: str,
@@ -242,6 +251,20 @@ class Store:
                         (lead_id, m.garage.place_id, m.distance_km, m.cost.low, m.cost.high, now),
                     )
         return lead_id
+
+    def lead_exists(self, lead_id: str) -> bool:
+        with self._conn() as conn:
+            return conn.execute("SELECT 1 FROM leads WHERE id = ?", (lead_id,)).fetchone() is not None
+
+    def lead_progress(self, lead_id: str) -> list[dict]:
+        """Per-garage status for the customer's progress view: [{name, status}], no contact details."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT g.name, lg.status FROM lead_garages lg JOIN garages g USING (place_id)"
+                " WHERE lg.lead_id = ? ORDER BY lg.distance_km",
+                (lead_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     def lead_recipients(self, lead_id: str) -> list[dict]:
         """Garages (with email) attached to a lead that haven't been notified yet."""

@@ -109,9 +109,9 @@ def diagnose(
         raise DiagnosisError("Please describe what's going wrong with the car.")
     answers = answers or []
     final_round = len(answers) >= MAX_ANSWERED_QUESTIONS
-    client = client or anthropic.Anthropic()
 
     try:
+        client = client or anthropic.Anthropic()
         response = client.messages.parse(
             model=os.environ.get("GARAGEPILOT_MODEL", DEFAULT_MODEL),
             max_tokens=MAX_TOKENS,
@@ -127,6 +127,17 @@ def diagnose(
         raise DiagnosisError("Could not reach the diagnosis service. Check your internet connection.") from exc
     except anthropic.APIStatusError as exc:
         raise DiagnosisError(f"The diagnosis service returned an error ({exc.status_code}).") from exc
+    except TypeError as exc:
+        # With no credentials the client builds fine but the request raises a bare TypeError.
+        if "authentication method" in str(exc):
+            raise DiagnosisError("No Anthropic API key found. Set ANTHROPIC_API_KEY in .env or the sidebar.") from exc
+        raise
+    except anthropic.AnthropicError as exc:
+        # The client constructor raises this base type when no credentials are configured.
+        # 1.x raises CredentialsError; 0.x raised a plain AnthropicError mentioning api_key.
+        if type(exc).__name__ == "CredentialsError" or "api_key" in str(exc).lower():
+            raise DiagnosisError("No Anthropic API key found. Set ANTHROPIC_API_KEY in .env or the sidebar.") from exc
+        raise DiagnosisError("The diagnosis service failed unexpectedly. Please try again.") from exc
 
     if response.stop_reason == "refusal":
         raise DiagnosisError("The diagnosis service could not process this request. Try rephrasing the problem.")
