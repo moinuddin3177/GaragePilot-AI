@@ -1,0 +1,15 @@
+{
+  "places": [
+    {"id": "fx_001", "displayName": {"text": "Downtown Brake & Tire"}, "location": {"latitude": 40.7160, "longitude": -74.0090}, "rating": 4.6, "userRatingCount": 412, "regularOpeningHours": {"openNow": true}, "nationalPhoneNumber": "(212) 555-0101", "websiteUri": "https://example.com/downtown-brake", "priceLevel": "PRICE_LEVEL_MODERATE"},
+    {"id": "fx_002", "displayName": {"text": "Liberty Auto Repair"}, "location": {"latitude": 40.7085, "longitude": -74.0130}, "rating": 4.2, "userRatingCount": 98, "regularOpeningHours": {"openNow": true}, "nationalPhoneNumber": "(212) 555-0102", "priceLevel": "PRICE_LEVEL_INEXPENSIVE"},
+    {"id": "fx_003", "displayName": {"text": "Precision Transmission Experts"}, "location": {"latitude": 40.7300, "longitude": -73.9950}, "rating": 4.8, "userRatingCount": 230, "regularOpeningHours": {"openNow": false}, "nationalPhoneNumber": "(212) 555-0103", "websiteUri": "https://example.com/precision", "priceLevel": "PRICE_LEVEL_EXPENSIVE"},
+    {"id": "fx_004", "displayName": {"text": "Speedy Lube & Service"}, "location": {"latitude": 40.7050, "longitude": -74.0020}, "rating": 3.7, "userRatingCount": 1204, "regularOpeningHours": {"openNow": true}, "nationalPhoneNumber": "(212) 555-0104", "priceLevel": "PRICE_LEVEL_INEXPENSIVE"},
+    {"id": "fx_005", "displayName": {"text": "Harbor Electrical & Diagnostics"}, "location": {"latitude": 40.7205, "longitude": -74.0150}, "rating": 4.9, "userRatingCount": 27, "regularOpeningHours": {"openNow": true}, "nationalPhoneNumber": "(212) 555-0105", "websiteUri": "https://example.com/harbor"},
+    {"id": "fx_006", "displayName": {"text": "Bridge Street Garage"}, "location": {"latitude": 40.6920, "longitude": -73.9900}, "rating": 4.4, "userRatingCount": 176, "regularOpeningHours": {"openNow": false}, "nationalPhoneNumber": "(718) 555-0106", "priceLevel": "PRICE_LEVEL_MODERATE"},
+    {"id": "fx_007", "displayName": {"text": "Midtown EV & Hybrid Service"}, "location": {"latitude": 40.7480, "longitude": -73.9860}, "rating": 4.7, "userRatingCount": 88, "regularOpeningHours": {"openNow": true}, "nationalPhoneNumber": "(212) 555-0107", "websiteUri": "https://example.com/midtown-ev", "priceLevel": "PRICE_LEVEL_VERY_EXPENSIVE"},
+    {"id": "fx_008", "displayName": {"text": "Cool Breeze AC & Auto"}, "location": {"latitude": 40.7010, "longitude": -74.0170}, "rating": 4.1, "userRatingCount": 54, "nationalPhoneNumber": "(212) 555-0108", "priceLevel": "PRICE_LEVEL_MODERATE"},
+    {"id": "fx_009", "displayName": {"text": "Uptown Auto Works"}, "location": {"latitude": 40.7900, "longitude": -73.9700}, "rating": 3.9, "userRatingCount": 310, "regularOpeningHours": {"openNow": true}, "nationalPhoneNumber": "(212) 555-0109"},
+    {"id": "fx_010", "displayName": {"text": "Faraway Motors"}, "location": {"latitude": 41.1000, "longitude": -73.7000}, "rating": 4.5, "userRatingCount": 60, "regularOpeningHours": {"openNow": true}, "nationalPhoneNumber": "(914) 555-0110"},
+    {"id": "fx_bad", "displayName": {"text": "Listing Without Location"}}
+  ]
+}
