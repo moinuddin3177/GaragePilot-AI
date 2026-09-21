@@ -7,6 +7,13 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+# Shared vocabulary: diagnosis output, garage registration and matching all use these.
+SPECIALTIES = (
+    "brakes", "engine", "transmission", "electrical", "ac", "tires",
+    "suspension", "exhaust", "battery", "ev", "diagnostics", "maintenance",
+)
+
+
 class Vehicle(BaseModel):
     make: str
     model: str
