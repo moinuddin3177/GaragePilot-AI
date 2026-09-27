@@ -11,6 +11,7 @@ Run:
 
 import os
 
+import anthropic
 import pandas as pd
 import streamlit as st
 
@@ -32,6 +33,21 @@ def get_store() -> Store:
     return Store()
 
 
+@st.cache_resource
+def server_anthropic_key() -> str | None:
+    """The deployment's own key (from .env or hosting secrets), captured once at process
+    startup so it can never be overwritten by something a later visitor types."""
+    return os.environ.get("ANTHROPIC_API_KEY") or None
+
+
+def diagnosis_client() -> anthropic.Anthropic | None:
+    """A client for *this* diagnose() call: the server's key if one is configured, else the
+    key this visitor typed (kept in their own session state, never shared or written to the
+    server's environment). None means no key is available; diagnose() reports that clearly."""
+    key = server_anthropic_key() or ss.get("session_anthropic_key")
+    return anthropic.Anthropic(api_key=key) if key else None
+
+
 store = get_store()
 ss = st.session_state
 
@@ -48,17 +64,20 @@ def reset() -> None:
 
 with st.sidebar:
     st.header("⚙️ Settings")
-    api_key = st.text_input(
-        "Anthropic API key",
-        type="password",
-        value=os.environ.get("ANTHROPIC_API_KEY", ""),
-        placeholder="sk-ant-...",
-        help="Used only to diagnose your car problem. Get one at console.anthropic.com",
-    )
-    if api_key:
-        os.environ["ANTHROPIC_API_KEY"] = api_key
+    if server_anthropic_key():
+        st.caption("✅ Diagnosis is configured by this server.")
     else:
-        st.warning("Enter your API key to enable diagnosis.")
+        st.text_input(
+            "Anthropic API key",
+            type="password",
+            value="",
+            placeholder="sk-ant-...",
+            help="Used only for your own diagnosis, kept for this browser session only, "
+            "and never saved on the server. Get one at console.anthropic.com",
+            key="session_anthropic_key",
+        )
+        if not ss.get("session_anthropic_key"):
+            st.warning("Enter your API key to enable diagnosis.")
     st.divider()
     st.caption(
         "Garages: **demo data** (no Google key set)" if places.is_fixture_mode() else "Garages: live Google Places"
@@ -157,7 +176,7 @@ if submitted:
         ss.photo = (photo.getvalue(), photo.type) if photo else None
         try:
             with st.spinner("Diagnosing your car problem…"):
-                ss.diagnosis = diagnose(Vehicle(**ss.vehicle), ss.symptoms, ss.answers, ss.photo)
+                ss.diagnosis = diagnose(Vehicle(**ss.vehicle), ss.symptoms, ss.answers, ss.photo, client=diagnosis_client())
             with st.spinner("Finding garages near you…"):
                 ss.origin, ss.garages = flow.search(ss.address, store)
         except (DiagnosisError, PlacesError) as exc:
@@ -185,7 +204,7 @@ if d.follow_up_questions:
             ss.answers = ss.answers + [(q, a.strip() or "Not sure") for q, a in zip(d.follow_up_questions, replies)]
             try:
                 with st.spinner("Updating the diagnosis…"):
-                    ss.diagnosis = diagnose(Vehicle(**ss.vehicle), ss.symptoms, ss.answers, ss.photo)
+                    ss.diagnosis = diagnose(Vehicle(**ss.vehicle), ss.symptoms, ss.answers, ss.photo, client=diagnosis_client())
             except DiagnosisError as exc:
                 st.error(str(exc))
             st.rerun()

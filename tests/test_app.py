@@ -1,5 +1,6 @@
 """End-to-end tests of the Streamlit pages using Streamlit's AppTest (no browser, no network)."""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -57,6 +58,38 @@ def fake_diagnose(monkeypatch, diagnosis):
 
     monkeypatch.setattr(diagnose_module, "diagnose", fake)
     return calls
+
+
+def test_sidebar_never_prefills_or_exposes_server_key(env):
+    # env fixture sets a real-looking server ANTHROPIC_API_KEY
+    at = customer_app()
+    assert not at.exception, at.exception
+    assert any("configured by this server" in c.value for c in at.caption)
+    assert not [t for t in at.text_input if t.label == "Anthropic API key"]  # no box to leak it from
+
+
+def test_sidebar_prompts_for_session_key_when_server_has_none(env, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    st.cache_resource.clear()
+    at = customer_app()
+    assert not at.exception, at.exception
+    box = at.text_input(key="session_anthropic_key")
+    assert box.value == ""  # never pre-filled from anywhere
+    assert any("Enter your API key" in w.value for w in at.warning)
+    assert not any("configured by this server" in c.value for c in at.caption)
+
+
+def test_typed_session_key_is_not_written_to_process_environment(env, monkeypatch, fake_diagnose):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    st.cache_resource.clear()
+    at = customer_app()
+    at.text_input(key="session_anthropic_key").input("sk-ant-visitor-typed-this")
+    at = fill_intake(at)
+    at = click(at, "Diagnose and find garages")
+    assert not at.exception, at.exception
+    assert os.environ.get("ANTHROPIC_API_KEY") is None  # never mutated globally
+    client = at.session_state.get("session_anthropic_key")
+    assert client == "sk-ant-visitor-typed-this"  # stays scoped to this session's own state
 
 
 def test_customer_full_flow(env, fake_diagnose):
