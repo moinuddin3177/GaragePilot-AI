@@ -16,7 +16,7 @@ import pandas as pd
 import streamlit as st
 
 from garagepilot import flow, notify, places
-from garagepilot.diagnose import DiagnosisError, diagnose
+from garagepilot.diagnose import DiagnosisError, answer_diagnosis_question, diagnose
 from garagepilot.models import Vehicle
 from garagepilot.places import PlacesError
 from garagepilot.store import Store, StoreError
@@ -229,6 +229,41 @@ st.dataframe(
     use_container_width=True,
 )
 st.caption("AI estimate from your description. Only a mechanic can confirm the cause. Costs below are estimates, not quotes.")
+
+
+# ---------------------------------------------------------------------------
+# Step 3a: Q&A chatbot about the diagnosis
+# ---------------------------------------------------------------------------
+
+st.divider()
+with st.expander("❓ Questions about your diagnosis?", expanded=False):
+    if "diagnosis_qa_history" not in ss:
+        ss.diagnosis_qa_history = []
+
+    # Display chat history
+    for msg in ss.diagnosis_qa_history:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
+
+    # Chat input
+    if question := st.chat_input("Ask about your diagnosis...", key="diagnosis_qa_input"):
+        # Add user message to history and display
+        ss.diagnosis_qa_history.append({"role": "user", "content": question})
+        with st.chat_message("user"):
+            st.write(question)
+
+        # Get answer from Claude
+        try:
+            with st.spinner("Thinking…"):
+                answer = answer_diagnosis_question(d, question, diagnosis_client())
+            ss.diagnosis_qa_history.append({"role": "assistant", "content": answer})
+            with st.chat_message("assistant"):
+                st.write(answer)
+        except DiagnosisError as exc:
+            st.error(f"Cannot answer: {str(exc)}")
+        except Exception as exc:
+            st.error(f"Unexpected error: {str(exc)}")
+        st.rerun()
 
 
 # ---------------------------------------------------------------------------

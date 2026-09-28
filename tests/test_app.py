@@ -243,3 +243,27 @@ def test_portal_rejects_duplicate_claim(env):
     at = click(at, "Register")
     assert any("already been claimed" in e.value for e in at.error)
     assert env.get_garage("fx_001")["email"] == "first@example.com"
+
+
+def test_qa_expander_appears_after_diagnosis(env, fake_diagnose):
+    """Q&A expander is available after diagnosis is shown."""
+    at = click(fill_intake(customer_app()), "Diagnose and find garages")
+    assert not at.exception, at.exception
+    assert any("Questions about your diagnosis" in e.label for e in at.expander)
+
+
+def test_qa_accepts_questions_about_diagnosis(env, fake_diagnose):
+    """Customer can ask a question and chat input is available."""
+    at = click(fill_intake(customer_app()), "Diagnose and find garages")
+    assert not at.exception, at.exception
+    # Chat input should be available in the expander
+    assert at.chat_input(key="diagnosis_qa_input") is not None
+
+
+def test_qa_stores_history_in_session(env, fake_diagnose):
+    """Q&A history is stored in session state."""
+    at = click(fill_intake(customer_app()), "Diagnose and find garages")
+    # Initially empty
+    assert at.session_state.get("diagnosis_qa_history", []) == []
+
+

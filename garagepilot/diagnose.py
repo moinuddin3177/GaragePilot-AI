@@ -144,3 +144,57 @@ def diagnose(
     if response.parsed_output is None:
         raise DiagnosisError("The diagnosis came back incomplete. Please try again.")
     return _normalize(response.parsed_output, final_round)
+
+
+def answer_diagnosis_question(diagnosis: Diagnosis, question: str, client: anthropic.Anthropic | None = None) -> str:
+    """
+    Answer a customer's question about their diagnosis. Stateless: each call is independent,
+    only the current diagnosis is context. Raises DiagnosisError with a user-safe message.
+    """
+    if not question.strip():
+        raise DiagnosisError("Please ask a question about your diagnosis.")
+
+    severity_labels = {1: "Cosmetic", 2: "Minor", 3: "Moderate", 4: "Serious", 5: "Dangerous"}
+    prompt = f"""You are a helpful automotive AI assistant. A customer has received a car diagnosis and wants to understand it better.
+
+**Their Diagnosis:**
+- Summary: {diagnosis.summary}
+- Severity: {diagnosis.severity}/5 ({severity_labels[diagnosis.severity]})
+- Safe to drive: {"Yes" if diagnosis.safe_to_drive else "No"}
+- Urgency: {diagnosis.urgency.replace("_", " ")}
+- Likely causes: {', '.join(f'{c.cause} ({c.probability:.0%} likely)' for c in diagnosis.likely_causes)}
+- Estimated labor: {diagnosis.est_labor_hours.low:.1f}–{diagnosis.est_labor_hours.high:.1f} hours
+- Estimated parts cost: ${diagnosis.est_parts_cost.low:.0f}–${diagnosis.est_parts_cost.high:.0f}
+- Required skills: {', '.join(diagnosis.required_specialties) if diagnosis.required_specialties else 'general'}
+
+**Customer's Question:** {question}
+
+Answer concisely and directly (2–3 sentences). Use the diagnosis data to support your answer. Be encouraging but honest."""
+
+    try:
+        client = client or anthropic.Anthropic()
+        response = client.messages.create(
+            model=os.environ.get("GARAGEPILOT_MODEL", DEFAULT_MODEL),
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except anthropic.AuthenticationError as exc:
+        raise DiagnosisError("The Anthropic API key was rejected. Check ANTHROPIC_API_KEY.") from exc
+    except anthropic.RateLimitError as exc:
+        raise DiagnosisError("The service is busy. Please try again in a moment.") from exc
+    except anthropic.APIConnectionError as exc:
+        raise DiagnosisError("Could not reach the service. Check your internet connection.") from exc
+    except anthropic.APIStatusError as exc:
+        raise DiagnosisError(f"The service returned an error ({exc.status_code}).") from exc
+    except TypeError as exc:
+        if "authentication method" in str(exc):
+            raise DiagnosisError("No Anthropic API key found. Set ANTHROPIC_API_KEY in .env or the sidebar.") from exc
+        raise
+    except anthropic.AnthropicError as exc:
+        if type(exc).__name__ == "CredentialsError" or "api_key" in str(exc).lower():
+            raise DiagnosisError("No Anthropic API key found. Set ANTHROPIC_API_KEY in .env or the sidebar.") from exc
+        raise DiagnosisError("The service failed unexpectedly. Please try again.") from exc
+
+    if response.content and len(response.content) > 0:
+        return response.content[0].text
+    raise DiagnosisError("Could not generate an answer. Please try again.")
