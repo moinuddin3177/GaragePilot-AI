@@ -249,7 +249,7 @@ def test_qa_expander_appears_after_diagnosis(env, fake_diagnose):
     """Q&A expander is available after diagnosis is shown."""
     at = click(fill_intake(customer_app()), "Diagnose and find garages")
     assert not at.exception, at.exception
-    assert any("Questions about your diagnosis" in e.label for e in at.expander)
+    assert any("Ask AI flying accordion" in e.label for e in at.expander)
 
 
 def test_qa_accepts_questions_about_diagnosis(env, fake_diagnose):

@@ -236,7 +236,7 @@ st.caption("AI estimate from your description. Only a mechanic can confirm the c
 # ---------------------------------------------------------------------------
 
 st.divider()
-with st.expander("❓ Questions about your diagnosis?", expanded=False):
+with st.expander("🪗 Ask AI flying accordion", expanded=False):
     if "diagnosis_qa_history" not in ss:
         ss.diagnosis_qa_history = []
 
